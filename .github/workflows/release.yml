@@ -1,0 +1,61 @@
+name: Create Release
+
+env:
+  PROJECT_NAME: xcnotary
+  
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --release --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Bottle
+      id: bottle
+      run: |
+          # Experimental: brew the bottle ourselves to attach it to this release
+          set -eu
+          OS_NAME=catalina
+          VERSION=${GITHUB_REF#refs/tags/v*}
+          BOTTLE_DIR=bottle_build
+          BOTTLE_BIN_DIR=$BOTTLE_DIR/${{ env.PROJECT_NAME }}/$VERSION/bin
+          BOTTLE_NAME=${{ env.PROJECT_NAME }}-$VERSION.$OS_NAME.bottle.tar.gz
+
+          mkdir -p $BOTTLE_BIN_DIR
+          mv target/release/${{ env.PROJECT_NAME }} $BOTTLE_BIN_DIR
+          cd $BOTTLE_DIR
+          tar cvzf $BOTTLE_NAME ${{ env.PROJECT_NAME }}
+          shasum -a 256 $BOTTLE_NAME
+          echo ::set-output name=BOTTLE_DIR::${BOTTLE_DIR}
+          echo ::set-output name=BOTTLE_NAME::${BOTTLE_NAME}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        body: |
+          Release
+        draft: false
+        prerelease: false
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ steps.bottle.outputs.BOTTLE_DIR }}/${{ steps.bottle.outputs.BOTTLE_NAME }}
+        asset_name: ${{ steps.bottle.outputs.BOTTLE_NAME }}
+        asset_content_type: application/tar+gzip
