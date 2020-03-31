@@ -32,7 +32,7 @@ brew install akeru-inc/tap/xcnotary
 ```
 xcnotary \
   -d <Apple Developer account> \
-  -k <keychain item for Apple Developer account password, see explanation below>
+  -k <keychain item for Apple Developer account password, see below> \
   -b <bundle path>
 ```
 
@@ -64,18 +64,20 @@ The following checks are currently performed:
 Following is a working example that sets various necessary build flags, such as code signing with a "secure timestamp":
 
 ```sh
-xcodebuild
-   -target <target>
-   -scheme <scheme>
-   -configuration Release
-   -derivedDataPath .xcodebuild
-   "CODE_SIGN_IDENTITY=Developer ID Application: <team name>" # name matching Keychain certificate
-   "OTHER_CODE_SIGN_FLAGS=--timestamp --options=runtime"
-   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO
+xcodebuild \
+   -target <target> \
+   -scheme <scheme> \
+   -configuration Release \
+   -derivedDataPath .xcodebuild \
+   "CODE_SIGN_IDENTITY=Developer ID Application: <team name>" \
+   "OTHER_CODE_SIGN_FLAGS=--timestamp --options=runtime" \
+   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
    CODE_SIGN_STYLE=Manual
 ```
 
-**Note:** The presence of `--options=runtime` will have the effect of opting in your binary to the hardened runtime environment. You most likely want to first manually enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities" and make sure your application functions as expected, including adding any entitlements to relax the runtime restrictions.
+`CODE_SIGN_IDENTITY` should match the corresponding Keychain certificate.
+
+Note that `--options=runtime` will have the effect of opting in your binary to the hardened runtime environment. You most likely want to first manually enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities" and make sure your application functions as expected. There, you may also add any entitlements to relax the runtime restrictions.
 
 # Contact
 
