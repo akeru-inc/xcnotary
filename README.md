@@ -1,4 +1,4 @@
-![logo](https://akeru-inc.github.io/xcnotary/images/logo.png)
+![logo](/docs/images/logo.png)
 
 ### the missing macOS app notarization helper, built with Rust
 
@@ -15,7 +15,7 @@
 - In case of failure, fetches the error log from Apple and outputs it to `stderr`.
 - Return a zero/non-zero code for easy CI integration.
 
-![Bundle pre-check](https://akeru-inc.github.io/xcnotary/images/notarize.svg)
+![Notarization](/docs/images/notarize.png)
 
 *Screencap sped up for brevity. The service takes several minutes to notarize your upload.*
 
@@ -50,7 +50,7 @@ This tool does not handle your Apple Developer password. Instead, Xcode's helper
 
 `xcnotary` attempts to check your bundle for some [common notarization issues](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/resolving_common_notarization_issues) before uploading it to Apple. While not foolproof, these checks may potentially save you minutes waiting for a response only to fail due to an incorrect code signing flag.
 
-![Bundle pre-check](https://akeru-inc.github.io/xcnotary/images/precheck.svg)
+![Bundle pre-check](/docs/images/precheck.png)
 
 The following checks are currently performed:
 
