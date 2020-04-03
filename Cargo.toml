@@ -1,6 +1,6 @@
 [package]
 name = "xcnotary"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["David Vartan <david@akeru.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -24,5 +24,9 @@ structopt = "0.3"
 
 [[bin]]
 name = "xcnotary"
-test = false
+test = true
 doc = false
+
+[dev-dependencies]
+assert_cmd = "1.0"
+predicates = "1.0"

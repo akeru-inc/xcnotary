@@ -12,7 +12,7 @@ pub(crate) struct PrecheckError {
 }
 
 impl PrecheckError {
-    pub(super) fn new(message: &str, solution: &str) -> PrecheckError {
+    pub(super) fn new(message: &str, solution: &str) -> Self {
         PrecheckError {
             message: message.into(),
             solution: solution.into(),
@@ -21,7 +21,7 @@ impl PrecheckError {
     }
 
     #[allow(dead_code)]
-    pub(super) fn new_with_url(message: &str, solution: &str, see_also: &str) -> PrecheckError {
+    pub(super) fn new_with_url(message: &str, solution: &str, see_also: &str) -> Self {
         PrecheckError {
             message: message.into(),
             solution: solution.into(),
@@ -34,7 +34,7 @@ impl std::fmt::Display for PrecheckError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let heading_style = Style::new().white().bold();
         let error_style = Style::new().red().bold();
-        
+
         write!(
             f,
             r#"{}

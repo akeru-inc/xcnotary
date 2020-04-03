@@ -1,0 +1,23 @@
+# made possible by xcodegen
+# https://github.com/yonaskolb/XcodeGen
+name: XCNotaryTestProject
+targets:
+  embedded_binary:
+    platform: macOS
+    type: tool
+    sources:
+      - embedded_src/main.m
+    settings:
+      CODE_SIGN_IDENTITY: "-"  
+  ${XCODEGEN_TARGET_NAME}:
+    platform: macOS
+    type: application
+    sources:
+      - app_src
+    settings:
+      CODE_SIGN_IDENTITY: "-"
+      INFOPLIST_FILE: app_src/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: com.xcnotary.test
+    dependencies:
+      - target: embedded_binary
+        embed: true

@@ -1,29 +1,10 @@
 mod notarize;
+mod precheck;
 mod util;
 
 use console::Style;
-use notarize::NotarizeOp;
 use std::error::Error;
-use std::path::PathBuf;
-use structopt::StructOpt;
-use util::OperationError;
-
-#[derive(Debug, StructOpt)]
-#[structopt(about = "macOS App Notarization Helper")]
-struct Args {
-    /// Apple developer account username
-    #[structopt(short, long)]
-    developer_account: String,
-
-    /// Name of keychain item containing developer account password
-    /// (see: https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow)
-    #[structopt(short = "k", long = "developer-password-keychain-item")]
-    password_keychain_item: String,
-
-    /// Path to bundle to be notarized
-    #[structopt(short, long, parse(from_os_str))]
-    bundle_path: PathBuf,
-}
+use util::cli::Args;
 
 fn main() {
     run().unwrap_or_else(|err| {
@@ -33,25 +14,33 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
-    let args = Args::from_args();
-
-    let bundle_info = util::bundle::read_bundle(&args.bundle_path)?;
+    let args = util::cli::parse();
 
     let emphasized = Style::new().white().bold();
-    println!(
-        "{} {} {} ({})\n",
-        emphasized.apply_to("Processing"),
-        bundle_info.name,
-        bundle_info.short_version_string,
-        bundle_info.version
-    );
+    println!("{}\n", emphasized.apply_to("Processing..."),);
 
-    NotarizeOp::new(
-        &bundle_info.id,
-        args.bundle_path,
-        &args.developer_account,
-        &args.password_keychain_item,
-    )
-    .run()
+    match args {
+        Args::Precheck { input_path } => {
+            let path_type = util::input_path::identify_path_type(&input_path)?;
+            precheck::run(&input_path, &path_type, true)?;
+        }
+        Args::Notarize {
+            developer_account,
+            password_keychain_item,
+            input_path,
+        } => {
+            let (path_type, bundle_id) = util::input_path::path_info(&input_path)?;
+
+            precheck::run(&input_path, &path_type, false)?;
+            notarize::run(
+                &input_path,
+                &path_type,
+                &bundle_id,
+                &developer_account,
+                &password_keychain_item,
+            )?;
+        }
+    }
+
+    Ok(())
 }
-

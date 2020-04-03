@@ -9,11 +9,11 @@ pub(crate) enum OperationError {
 }
 
 impl OperationError {
-    pub(crate) fn new(message: &str) -> OperationError {
+    pub(crate) fn new(message: &str) -> Self {
         OperationError::Text(message.into())
     }
 
-    pub(crate) fn detail(heading: &str, message: &str) -> OperationError {
+    pub(crate) fn detail(heading: &str, message: &str) -> Self {
         OperationError::Detailed(heading.into(), message.into())
     }
 }

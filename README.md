@@ -4,7 +4,7 @@
 
 # About
 
-[Notarizing a macOS app](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution) involves a series of manual steps, including zipping the bundle, uploading it to to Apple, and polling the notarization service.
+[Notarizing a macOS app](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution) involves a series of manual steps, including zipping a bundle, uploading it to to Apple, and polling the notarization service.
 
 `xcnotary` automates these steps for you. It:
 
@@ -29,11 +29,18 @@ brew install akeru-inc/tap/xcnotary
 
 # Usage
 
+To perform various code signing checks on input bundle or package without submitting:
+
+```sh
+xcnotary precheck <bundle or package path>
 ```
-xcnotary \
-  -d <Apple Developer account> \
-  -k <keychain item for Apple Developer account password, see below> \
-  -b <bundle path>
+
+To perform code signing checks, submit to the notarization service, and block waiting for response:
+
+```sh
+xcnotary notarize <bundle or package path> \
+  --developer-account <Apple Developer account> \
+  --developer-password-keychain-item <name of keychain item, see below>
 ```
 
 ### Specifying the password keychain item
@@ -48,20 +55,24 @@ This tool does not handle your Apple Developer password. Instead, Xcode's helper
 
 # Bundle pre-checks
 
-`xcnotary` attempts to check your bundle for some [common notarization issues](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/resolving_common_notarization_issues) before uploading it to Apple. While not foolproof, these checks may potentially save you minutes waiting for a response only to fail due to an incorrect code signing flag.
+`xcnotary` attempts to check the input for some [common notarization issues](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/resolving_common_notarization_issues) before uploading it to Apple. While not foolproof, these checks may potentially save you minutes waiting for a response only to fail due to an incorrect code signing flag.
 
 ![Bundle pre-check](/docs/images/precheck.png)
 
-The following checks are currently performed:
+When the input is an app bundle, the following checks will be performed:
 
-- [x] Bundle being signed with a Developer ID certificate and not containing unsigned items.
-- [x] Bundle being signed with a secure timestamp.
-- [x] Bundle *not* having the get-task-allow entitlement.
-- [x] Bundle having hardened runtime enabled.
+- ✅ Bundle being signed with a Developer ID certificate and not containing unsigned items.
+- ✅ Bundle being signed with a secure timestamp.
+- ✅ Bundle *not* having the get-task-allow entitlement.
+- ✅ Bundle having hardened runtime enabled.
 
-# Building a notarization-friendly bundle
+When the input is a *.pkg*, only the Developer ID signing check is performed, i.e. the only check that can be performed at the moment without extracting the contents of the package. As such, in your workflow you may want to run `xcnotary precheck` on your bundle target before including it in a package.
 
-Following is a working example that sets various necessary build flags, such as code signing with a "secure timestamp":
+# Building for notarization
+
+The following examples set various necessary build flags, such as code signing with a "secure timestamp."
+
+### Bundles
 
 ```sh
 xcodebuild \
@@ -79,6 +90,18 @@ xcodebuild \
 
 Note that `--options=runtime` will have the effect of opting in your binary to the hardened runtime environment. You most likely want to first manually enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities" and make sure your application functions as expected. There, you may also add any entitlements to relax the runtime restrictions.
 
-# Contact
+### Packages
 
-Feature requests/comments/questions? Write: david@akeru.com
+```sh
+pkgbuild \
+   --component <path to bundle built according to above specs>
+   --sign "Developer ID Application: Installer Inc." \
+   --timestamp \
+   <output_pkg_name.pkg>
+```
+
+# Additional Information
+
+- [Change Log](CHANGELOG.md)
+
+- Feature requests/comments/questions? Write: david@akeru.com
