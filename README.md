@@ -23,8 +23,13 @@
 
 ### Homebrew
 
-```
+```sh
+# Install
 brew install akeru-inc/tap/xcnotary
+
+# Upgrade
+brew update
+brew upgrade akeru-inc/tap/xcnotary
 ```
 
 # Usage
