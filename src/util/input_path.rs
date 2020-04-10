@@ -26,7 +26,9 @@ pub(crate) fn path_info<P: AsRef<Path>>(
     Ok((path_type, bundle_id))
 }
 
-pub(crate) fn identify_path_type<P: AsRef<Path>>(bundle_path: P) -> Result<PathType, OperationError> {
+pub(crate) fn identify_path_type<P: AsRef<Path>>(
+    bundle_path: P,
+) -> Result<PathType, OperationError> {
     // Alternatively, could just check the extension.
     let output = Command::new("/usr/bin/mdls")
         .args(&[

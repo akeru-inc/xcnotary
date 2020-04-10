@@ -26,6 +26,10 @@ pub(crate) enum Args {
         /// Path to bundle or package
         #[structopt(parse(from_os_str))]
         input_path: PathBuf,
+
+        /// Required if the developer credentials are associated with more than one team. Corresponds to "ProviderShortname" from running `xcrun altool --list-providers`
+        #[structopt(long)]
+        provider: Option<String>
     },
 }
 

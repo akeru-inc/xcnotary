@@ -28,16 +28,18 @@ fn run() -> Result<(), Box<dyn Error>> {
             developer_account,
             password_keychain_item,
             input_path,
+            provider,
         } => {
             let (path_type, bundle_id) = util::input_path::path_info(&input_path)?;
 
             precheck::run(&input_path, &path_type, false)?;
             notarize::run(
-                &input_path,
-                &path_type,
-                &bundle_id,
-                &developer_account,
-                &password_keychain_item,
+                input_path,
+                path_type,
+                bundle_id,
+                developer_account,
+                password_keychain_item,
+                provider,
             )?;
         }
     }

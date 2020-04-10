@@ -17,14 +17,24 @@ struct InputFilePath {
     path: PathBuf,
     _temp_dir: Option<TempDir>,
 }
-
-impl<'a> NotarizeOp<'a> {
-    pub(super) fn new(
-        input_path: &'a PathBuf,
-        path_type: &'a PathType,
+enum AltoolArgs<'a> {
+    NotarizationInfo {
+        request_id: &'a str,
+    },
+    NotarizeApp {
+        path: &'a PathBuf,
         bundle_id: &'a str,
-        developer_account: &'a str,
-        password_keychain_item: &'a str,
+    },
+}
+
+impl NotarizeOp {
+    pub(super) fn new(
+        input_path: PathBuf,
+        path_type: PathType,
+        bundle_id: String,
+        developer_account: String,
+        password_keychain_item: String,
+        provider: Option<String>,
     ) -> Self {
         NotarizeOp {
             input_path,
@@ -32,6 +42,7 @@ impl<'a> NotarizeOp<'a> {
             bundle_id,
             developer_account,
             password_keychain_item,
+            provider,
         }
     }
 
@@ -125,23 +136,10 @@ impl<'a> NotarizeOp<'a> {
 
     /// Submits app to the notarization service, returning the request ID.
     fn submit_to_service(&self, input_path: InputFilePath) -> Result<String, OperationError> {
-        let output = Command::new("/usr/bin/xcrun")
-            .args(&[
-                "altool",
-                "--notarize-app",
-                "--file",
-                input_path.path.to_str().unwrap(),
-                "--primary-bundle-id",
-                self.bundle_id,
-                "-u",
-                self.developer_account,
-                "-p",
-                &format!("@keychain:{}", self.password_keychain_item),
-                "--output-format",
-                "xml",
-            ])
-            .output()
-            .unwrap();
+        let output = self.run_altool(AltoolArgs::NotarizeApp {
+            path: &input_path.path,
+            bundle_id: &self.bundle_id,
+        });
 
         if !output.status.success() {
             return Err(OperationError::detail(
@@ -157,20 +155,9 @@ impl<'a> NotarizeOp<'a> {
 
     /// Retrieves current status from the notarization service.
     fn get_status(&self, request_id: &str) -> Result<NotarizationInfo, OperationError> {
-        let output = Command::new("/usr/bin/xcrun")
-            .args(&[
-                "altool",
-                "--notarization-info",
-                &request_id,
-                "-u",
-                self.developer_account,
-                "-p",
-                &format!("@keychain:{}", self.password_keychain_item),
-                "--output-format",
-                "xml",
-            ])
-            .output()
-            .unwrap();
+        let output = self.run_altool(AltoolArgs::NotarizationInfo {
+            request_id: request_id.clone(),
+        });
 
         if !output.status.success() {
             return Err(OperationError::detail(
@@ -207,5 +194,38 @@ impl<'a> NotarizeOp<'a> {
         }
 
         Ok(())
+    }
+
+    fn run_altool(&self, args: AltoolArgs) -> std::process::Output {
+        let args = match args {
+            AltoolArgs::NotarizationInfo { request_id } => vec!["--notarization-info", &request_id],
+            AltoolArgs::NotarizeApp { path, bundle_id } => vec![
+                "--notarize-app",
+                "--file",
+                path.to_str().unwrap(),
+                "--primary-bundle-id",
+                bundle_id,
+            ],
+        };
+
+        let provider_args = self
+            .provider
+            .as_ref()
+            .map_or(Vec::<String>::new(), |p| vec![p.clone()]);
+
+        Command::new("/usr/bin/xcrun")
+            .args(&[
+                "altool",
+                "-u",
+                &self.developer_account,
+                "-p",
+                &format!("@keychain:{}", self.password_keychain_item),
+                "--output-format",
+                "xml",
+            ])
+            .args(provider_args)
+            .args(args)
+            .output()
+            .unwrap()
     }
 }

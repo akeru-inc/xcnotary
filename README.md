@@ -46,11 +46,20 @@ To perform code signing checks, submit to the notarization service, and block wa
 xcnotary notarize <bundle or package path> \
   --developer-account <Apple Developer account> \
   --developer-password-keychain-item <name of keychain item, see below>
+  [--provider <provider short name>]
 ```
 
 ### Specifying the password keychain item
 
 This tool does not handle your Apple Developer password. Instead, Xcode's helper `altool` reads an app-specific Apple Developer ID password directly from the keychain. See [the documentation](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow#3087734) for `xcrun altool --store-password-in-keychain-item` to set up a suitable keychain item.
+
+### Specifying the developer team
+
+The optional `--provider` argument should be specified if the developer account is associated with more than one team. This value can be obtained by running the following command and noting the "ProviderShortname" displayed.
+
+```sh
+xcrun altool --list-providers  -u "$DEVELOPER_ACCOUNT_USERNAME" -p "@keychain:$PASSWORD_KEYCHAIN_ITEM"
+```
 
 ### Required network access
 
