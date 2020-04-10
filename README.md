@@ -45,7 +45,7 @@ To perform code signing checks, submit to the notarization service, and block wa
 ```sh
 xcnotary notarize <bundle or package path> \
   --developer-account <Apple Developer account> \
-  --developer-password-keychain-item <name of keychain item, see below>
+  --developer-password-keychain-item <name of keychain item, see below> \
   [--provider <provider short name>]
 ```
 
