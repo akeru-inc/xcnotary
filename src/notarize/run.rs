@@ -211,7 +211,7 @@ impl NotarizeOp {
         let provider_args = self
             .provider
             .as_ref()
-            .map_or(Vec::<&str>::new(), |p| vec!["--asc-provider", &p]);
+            .map_or(vec![], |p| vec!["--asc-provider", &p]);
 
         Command::new("/usr/bin/xcrun")
             .args(&[
