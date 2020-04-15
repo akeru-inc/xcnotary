@@ -207,11 +207,11 @@ impl NotarizeOp {
                 bundle_id,
             ],
         };
-
+        
         let provider_args = self
             .provider
             .as_ref()
-            .map_or(Vec::<String>::new(), |p| vec![p.clone()]);
+            .map_or(Vec::<&str>::new(), |p| vec!["--asc-provider", &p]);
 
         Command::new("/usr/bin/xcrun")
             .args(&[
