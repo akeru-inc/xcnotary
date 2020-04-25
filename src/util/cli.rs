@@ -29,7 +29,7 @@ pub(crate) enum Args {
 
         /// Required if the developer credentials are associated with more than one team. Corresponds to "ProviderShortname" from running `xcrun altool --list-providers`
         #[structopt(long)]
-        provider: Option<String>
+        provider: Option<String>,
     },
 }
 

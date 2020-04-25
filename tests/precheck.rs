@@ -29,7 +29,7 @@ fn package_artifacts_path(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests");
     path.push("generated_artifacts");
-    path.push("packages");
+    path.push("pkg");
     path.push(name);
     path.set_extension("pkg");
     path

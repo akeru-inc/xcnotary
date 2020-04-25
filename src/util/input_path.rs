@@ -9,9 +9,9 @@ pub(crate) fn path_info<P: AsRef<Path>>(
     let path_type = identify_path_type(&input_path)?;
     let bundle_id = match &path_type {
         PathType::AppBundle => read_bundle_info(&input_path)?.id,
-        // Generate a pseudo-bundle ID since it is used for informational purposes
-        // only to notify of notarization status.
-        PathType::InstallerPackage => input_path
+        // Generate a pseudo-bundle ID. This value is used for informational purposes
+        // e.g. to notify of notarization status.
+        PathType::DiskImage | PathType::InstallerPackage => input_path
             .as_ref()
             .file_name()
             .unwrap()
@@ -50,11 +50,13 @@ pub(crate) fn identify_path_type<P: AsRef<Path>>(
 
     if stdout.contains(r#""com.apple.application-bundle""#) {
         return Ok(PathType::AppBundle);
+    } else if stdout.contains(r#""com.apple.disk-image""#) {
+        return Ok(PathType::DiskImage);
     } else if stdout.contains(r#""com.apple.installer-package-archive""#) {
         return Ok(PathType::InstallerPackage);
     } else {
         return Err(OperationError::new(&format!(
-            "Expected an application bundle or installer package at {}",
+            "Expected an application bundle, disk image, or installer package at {}",
             bundle_path.as_ref().display()
         ))
         .into());
@@ -63,6 +65,7 @@ pub(crate) fn identify_path_type<P: AsRef<Path>>(
 
 pub(crate) enum PathType {
     AppBundle,
+    DiskImage,
     InstallerPackage,
 }
 

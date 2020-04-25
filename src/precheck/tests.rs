@@ -1,48 +1,110 @@
+use std::path::PathBuf;
+
 use super::Precheck;
 use crate::util::input_path::PathType;
 
+impl super::Status {
+    fn is_pass(&self) -> bool {
+        match self {
+            Self::Pass => true,
+            Self::Fail { .. } => false,
+        }
+    }
+
+    fn is_fail(&self) -> bool {
+        !self.is_pass()
+    }
+}
+
 #[test]
 pub fn test_precheck_package() {
-    let test_path = test_utils::artifacts_path(PathType::InstallerPackage, "unsigned");
-    assert!(super::package::DeveloperIdCheck.run(&test_path).is_err());
+    let artifact = test_utils::artifact(PathType::InstallerPackage, "unsigned");
+    assert!(super::package::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_fail());
 
-    let test_path = test_utils::artifacts_path(
+    let artifact = test_utils::artifact(
         PathType::InstallerPackage,
-        "signed_with_correctly_signed_app.pkg",
+        "signed_with_correctly_signed_app",
     );
-    assert!(super::package::DeveloperIdCheck.run(&test_path).is_ok());
+    assert!(super::package::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_pass());
 }
+
+#[test]
+pub fn test_malformed_input() {
+    assert!(super::package::DeveloperIdCheck
+        .run(&PathBuf::from("foobar"))
+        .is_err());
+}
+
+#[test]
+pub fn test_precheck_dmg() {
+    let artifact = test_utils::artifact(PathType::DiskImage, "unsigned");
+    assert!(super::dmg::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_fail());
+
+    let artifact = test_utils::artifact(PathType::DiskImage, "signed_with_correctly_signed_app");
+    assert!(super::dmg::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_pass());
+}
+
 #[test]
 pub fn test_precheck_bundle() {
-    let artifact = test_utils::bundle_artifact("correctly_signed");
-    assert!(super::bundle::DeveloperIdCheck.run(&artifact.path).is_ok());
+    let artifact = test_utils::artifact(PathType::AppBundle, "correctly_signed");
+    assert!(super::bundle::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_pass());
     assert!(super::bundle::HardenedRuntimeCheck
         .run(&artifact.path)
-        .is_ok());
+        .unwrap()
+        .is_pass());
     assert!(super::bundle::NoGetTaskAllowCheck
         .run(&artifact.path)
-        .is_ok());
+        .unwrap()
+        .is_pass());
     assert!(super::bundle::SecureTimestampCheck
         .run(&artifact.path)
-        .is_ok());
+        .unwrap()
+        .is_pass());
 
-    let artifact = test_utils::bundle_artifact("unsigned");
-    assert!(super::bundle::DeveloperIdCheck.run(&artifact.path).is_err());
+    let artifact = test_utils::artifact(PathType::AppBundle, "unsigned");
+    assert!(super::bundle::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_fail());
 
-    let artifact = test_utils::bundle_artifact("no_secure_timestamp");
+    let artifact = test_utils::artifact(PathType::AppBundle, "manually_signed");
+    assert!(super::bundle::DeveloperIdCheck
+        .run(&artifact.path)
+        .unwrap()
+        .is_pass());
+
+    let artifact = test_utils::artifact(PathType::AppBundle, "no_secure_timestamp");
     assert!(super::bundle::SecureTimestampCheck
         .run(&artifact.path)
-        .is_err());
+        .unwrap()
+        .is_fail());
 
-    let artifact = test_utils::bundle_artifact("no_hardened_runtime");
+    let artifact = test_utils::artifact(PathType::AppBundle, "no_hardened_runtime");
     assert!(super::bundle::HardenedRuntimeCheck
         .run(&artifact.path)
-        .is_err());
+        .unwrap()
+        .is_fail());
 
-    let artifact = test_utils::bundle_artifact("has_get_task_allow");
+    let artifact = test_utils::artifact(PathType::AppBundle, "has_get_task_allow");
     assert!(super::bundle::NoGetTaskAllowCheck
         .run(&artifact.path)
-        .is_err());
+        .unwrap()
+        .is_fail());
 }
 
 pub(super) mod test_utils {
@@ -51,23 +113,17 @@ pub(super) mod test_utils {
     use std::process::Command;
     use tempfile::{Builder as TempFileBuilder, TempDir};
 
-    pub struct BundleArtifact {
-        _temp_dir: TempDir,
+    pub struct Artifact {
         pub path: PathBuf,
+        _temp_dir: Option<TempDir>,
     }
 
-    pub fn bundle_artifact(name: &str) -> BundleArtifact {
-        let zipped_artifact_path = artifacts_path(PathType::AppBundle, name);
-
+    fn bundle_artifact(zipped_path: &str, name: &str) -> Artifact {
         let temp_dir = TempFileBuilder::new().tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap();
 
         let status = Command::new("/usr/bin/ditto")
-            .args(&[
-                "-xk",
-                &zipped_artifact_path.to_str().unwrap(),
-                &temp_dir_path,
-            ])
+            .args(&["-xk", zipped_path, &temp_dir_path])
             .status()
             .unwrap();
 
@@ -79,31 +135,52 @@ pub(super) mod test_utils {
         artifact_path.push(name);
         artifact_path.set_extension("app");
 
-        BundleArtifact {
-            _temp_dir: temp_dir,
+        Artifact {
             path: artifact_path,
+            _temp_dir: Some(temp_dir),
         }
     }
 
-    pub(crate) fn artifacts_path(path_type: PathType, name: &str) -> PathBuf {
+    pub(crate) fn artifact(path_type: PathType, name: &str) -> Artifact {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("tests/generated_artifacts");
 
-        match path_type {
+        let artifact = match path_type {
             PathType::AppBundle => {
-                path.push("apps");
+                path.push("app");
                 path.push(name);
                 path.set_extension("zip");
+
+                bundle_artifact(path.to_str().unwrap(), name)
+            }
+            PathType::DiskImage => {
+                path.push("dmg");
+                path.push(name);
+                path.set_extension("dmg");
+
+                Artifact {
+                    path: path,
+                    _temp_dir: None,
+                }
             }
             PathType::InstallerPackage => {
-                path.push("packages");
+                path.push("pkg");
                 path.push(name);
                 path.set_extension("pkg");
+
+                Artifact {
+                    path: path,
+                    _temp_dir: None,
+                }
             }
-        }
+        };
 
-        assert!(path.exists(), "Expected test artifact to exist: {:?}", path);
+        assert!(
+            artifact.path.exists(),
+            "Expected test artifact to exist: {:?}",
+            artifact.path
+        );
 
-        path
+        artifact
     }
 }

@@ -1,24 +1,24 @@
 mod bundle;
 mod package;
+mod util;
 use console::Style;
-
-mod precheck_error;
-
-use std::path::PathBuf;
-
-use crate::util::display::progress_bar;
-use crate::util::input_path::PathType;
+mod dmg;
+mod error;
 
 #[cfg(test)]
 mod tests;
 
 use std::error::Error;
+use std::path::PathBuf;
 
-pub(self) use precheck_error::PrecheckError;
+use crate::util::display::progress_bar;
+use crate::util::input_path::PathType;
+
+pub(self) use error::Status;
 
 pub(crate) trait Precheck {
     fn display(&self) -> &'static str;
-    fn run(&self, input_path: &PathBuf) -> Result<(), Box<dyn Error>>;
+    fn run(&self, input_path: &PathBuf) -> Result<Status, Box<dyn Error>>;
 }
 
 pub(crate) fn run(
@@ -33,19 +33,19 @@ pub(crate) fn run(
             Box::new(bundle::NoGetTaskAllowCheck),
             Box::new(bundle::SecureTimestampCheck),
         ],
+        PathType::DiskImage => vec![Box::new(dmg::DeveloperIdCheck)],
         PathType::InstallerPackage => vec![Box::new(package::DeveloperIdCheck)],
     };
 
-    checks.into_iter().try_for_each(|x| {
-        let pb = progress_bar(&format!("Perform check: {}", x.display()));
-        let ret = x.run(path);
+    for check in checks {
+        let pb = progress_bar(&format!("Perform check: {}", check.display()));
 
-        if ret.is_ok() {
-            pb.finish();
+        if let Some(error) = check.run(path)?.to_err() {
+            return Err(error.into());
         }
 
-        ret
-    })?;
+        pb.finish();
+    }
 
     if show_message {
         if let PathType::InstallerPackage = path_type {

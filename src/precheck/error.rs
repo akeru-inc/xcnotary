@@ -4,30 +4,45 @@ use std::fmt;
 
 static DEFAULT_HELP_URL:&str = "https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/resolving_common_notarization_issues";
 
+pub(crate) enum Status {
+    Pass,
+    Fail {
+        message: String,
+        solution: String,
+        see_also: Option<String>,
+    },
+}
+
+impl Status {
+    pub(super) fn fail_with(message: &str, solution: &str, see_also: Option<String>) -> Self {
+        Status::Fail {
+            message: message.into(),
+            solution: solution.into(),
+            see_also,
+        }
+    }
+
+    pub(super) fn to_err(self) -> Option<PrecheckError> {
+        match self {
+            Self::Pass => None,
+            Self::Fail {
+                message,
+                solution,
+                see_also,
+            } => Some(PrecheckError {
+                message,
+                solution,
+                see_also,
+            }),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct PrecheckError {
     message: String,
     solution: String,
     see_also: Option<String>,
-}
-
-impl PrecheckError {
-    pub(super) fn new(message: &str, solution: &str) -> Self {
-        PrecheckError {
-            message: message.into(),
-            solution: solution.into(),
-            see_also: None,
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(super) fn new_with_url(message: &str, solution: &str, see_also: &str) -> Self {
-        PrecheckError {
-            message: message.into(),
-            solution: solution.into(),
-            see_also: Some(see_also.into()),
-        }
-    }
 }
 
 impl std::fmt::Display for PrecheckError {

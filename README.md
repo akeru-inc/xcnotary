@@ -8,10 +8,10 @@
 
 `xcnotary` automates these steps for you. It:
 
-- Attempts to fail fast if necessary, performing several checks on your application bundle before uploading it to Apple.
-- Compresses and submits the bundle to the notarization service.
-- Polls the service until completion. This step typically takes a few minutes.
-- In case of success, attaches the notarization ticket to the bundle, enabling the app to pass Gatekeeper on first run even without an Internet connection.
+- Attempts to fail fast if necessary, performing several checks on your target before uploading it to Apple.
+- Zips the input if it is an .app bundle.
+- Submits the input to the notarization service, and polls until completion. This step typically takes a few minutes.
+- In case of success, attaches the notarization ticket to the target, enabling the app to pass Gatekeeper on first run even without an Internet connection.
 - In case of failure, fetches the error log from Apple and outputs it to `stderr`.
 - Return a zero/non-zero code for easy CI integration.
 
@@ -34,20 +34,26 @@ brew upgrade akeru-inc/tap/xcnotary
 
 # Usage
 
-To perform various code signing checks on input bundle or package without submitting:
+To perform various code signing checks on the input without submitting:
 
 ```sh
-xcnotary precheck <bundle or package path>
+xcnotary precheck <input path>
 ```
 
 To perform code signing checks, submit to the notarization service, and block waiting for response:
 
 ```sh
-xcnotary notarize <bundle or package path> \
+xcnotary notarize <input path> \
   --developer-account <Apple Developer account> \
   --developer-password-keychain-item <name of keychain item, see below> \
   [--provider <provider short name>]
 ```
+
+Supported inputs:
+
+- ✅ .app bundles
+- ✅ .dmg disk images
+- ✅ .pkg installer packages
 
 ### Specifying the password keychain item
 
@@ -80,7 +86,7 @@ When the input is an app bundle, the following checks will be performed:
 - ✅ Bundle *not* having the get-task-allow entitlement.
 - ✅ Bundle having hardened runtime enabled.
 
-When the input is a *.pkg*, only the Developer ID signing check is performed, i.e. the only check that can be performed at the moment without extracting the contents of the package. As such, in your workflow you may want to run `xcnotary precheck` on your bundle target before including it in a package.
+When the input is a *.dmg* or a *.pkg*, only the Developer ID signing check is performed, i.e. the only check that can be performed at the moment without extracting the contents. In your workflow, you may want to run `xcnotary precheck` on your bundle target before packaging it.
 
 # Building for notarization
 
@@ -109,9 +115,17 @@ Note that `--options=runtime` will have the effect of opting in your binary to t
 ```sh
 pkgbuild \
    --component <path to bundle built according to above specs>
-   --sign "Developer ID Application: Installer Inc." \
+   --sign "Developer ID Installer: <team name>" \
    --timestamp \
    <output_pkg_name.pkg>
+```
+
+### Disk images
+
+Codesign after creating the DMG:
+
+```sh
+codesign -s "Developer ID Application: <team>" <dmg>
 ```
 
 # Additional Information

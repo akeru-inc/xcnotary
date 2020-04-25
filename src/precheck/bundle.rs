@@ -1,8 +1,10 @@
-use super::PrecheckError;
-use crate::util::OperationError;
 use std::error::Error;
 use std::path::PathBuf;
 use std::process::Command;
+
+use super::util::passes_spctl;
+use super::Status;
+use crate::util::OperationError;
 
 pub(super) struct DeveloperIdCheck;
 
@@ -11,21 +13,16 @@ impl super::Precheck for DeveloperIdCheck {
         "Developer ID signing"
     }
 
-    fn run(&self, input_path: &PathBuf) -> Result<(), Box<dyn Error>> {
-        let output = Command::new("/usr/sbin/spctl")
-            .args(&["-v", "--assess", "--type", "exec"])
-            .arg(input_path.as_os_str())
-            .output()
-            .unwrap();
-
-        if !output.status.success() {
-            return Err(PrecheckError::new(
-                "Bundle is not signed with a Developer ID certificate or bundle includes unsigned binaries.",
-                "Make sure CODE_SIGN_IDENTITY was specified during the build."
-            ).into());
+    fn run(&self, input_path: &PathBuf) -> Result<Status, Box<dyn Error>> {
+        if passes_spctl(&vec!["-t", "exec"], input_path)? {
+            Ok(Status::Pass)
+        } else {
+            Ok(Status::fail_with(
+                "Bundle is not signed with a Developer ID certificate or it includes unsigned binaries.",
+                "Make sure CODE_SIGN_IDENTITY was specified during the build.",
+                None
+            ))
         }
-
-        Ok(())
     }
 }
 
@@ -36,12 +33,11 @@ impl super::Precheck for HardenedRuntimeCheck {
         "Hardened runtime"
     }
 
-    fn run(&self, input_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    fn run(&self, input_path: &PathBuf) -> Result<Status, Box<dyn Error>> {
         let output = Command::new("/usr/bin/codesign")
             .args(&["--display", "--verbose"])
             .arg(input_path.as_os_str())
-            .output()
-            .unwrap();
+            .output()?;
 
         // unfortunately, codesign sends output to stderr.
         let stderr = String::from_utf8(output.stderr).unwrap();
@@ -60,15 +56,15 @@ impl super::Precheck for HardenedRuntimeCheck {
             .find(|s: &&str| s.starts_with("flags"))
             .unwrap();
 
-        if !flags_text.contains("runtime") {
-            return Err(PrecheckError::new(
+        if flags_text.contains("runtime") {
+            Ok(Status::Pass)
+        } else {
+            Ok(Status::fail_with(
                 "Bundle does not have hardened runtime enabled.",
                 r#"codesign using --runtime flag, or pass OTHER_CODE_SIGN_FLAGS=--runtime to xcodebuild. You can also enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities""#,
-            )
-            .into());
+                None,
+            ))
         }
-
-        Ok(())
     }
 }
 
@@ -79,12 +75,11 @@ impl super::Precheck for NoGetTaskAllowCheck {
         "No get-task-allow entitlement"
     }
 
-    fn run(&self, input_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    fn run(&self, input_path: &PathBuf) -> Result<Status, Box<dyn Error>> {
         let output = Command::new("/usr/bin/codesign")
             .args(&["-d", "--entitlements", ":-"])
             .arg(input_path.as_os_str())
-            .output()
-            .unwrap();
+            .output()?;
 
         if !output.status.success() {
             let stderr = String::from_utf8(output.stderr).unwrap();
@@ -95,14 +90,14 @@ impl super::Precheck for NoGetTaskAllowCheck {
             .unwrap()
             .contains("com.apple.security.get-task-allow")
         {
-            return Err(PrecheckError::new(
+            Ok(Status::fail_with(
                 "Bundle includes get-task-allow entitlement.",
                 "Specify CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO when running xcodebuild.",
-            )
-            .into());
+                None,
+            ))
+        } else {
+            Ok(Status::Pass)
         }
-
-        Ok(())
     }
 }
 
@@ -113,12 +108,11 @@ impl super::Precheck for SecureTimestampCheck {
         "Secure timestamp"
     }
 
-    fn run(&self, input_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    fn run(&self, input_path: &PathBuf) -> Result<Status, Box<dyn Error>> {
         let output = Command::new("/usr/bin/codesign")
             .arg("-dvv")
             .arg(input_path.as_os_str())
-            .output()
-            .unwrap();
+            .output()?;
 
         // unfortunately, codesign sends successful output to stderr.
         let stderr = String::from_utf8(output.stderr).unwrap();
@@ -127,13 +121,14 @@ impl super::Precheck for SecureTimestampCheck {
         }
 
         // Note: Presence of "Signed Time" would also indicate that a secure timestamp is missing
-        if !stderr.contains("Timestamp=") {
-            return Err(PrecheckError::new(
-            r#"The bundle is missing a secure timestamp."#,
-             "codesign using --timestamp flag, or pass OTHER_CODE_SIGN_FLAGS=--timestamp to xcodebuild."            
-            ).into());
+        if stderr.contains("Timestamp=") {
+            Ok(Status::Pass)
+        } else {
+            Ok(Status::fail_with(
+                r#"The bundle is missing a secure timestamp."#,
+                "codesign using --timestamp flag, or pass OTHER_CODE_SIGN_FLAGS=--timestamp to xcodebuild.",
+             None
+            ))
         }
-
-        Ok(())
     }
 }

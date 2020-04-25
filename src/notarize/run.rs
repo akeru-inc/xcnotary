@@ -54,7 +54,7 @@ impl NotarizeOp {
                 pb.finish();
                 ret
             }
-            PathType::InstallerPackage => InputFilePath {
+            PathType::DiskImage | PathType::InstallerPackage => InputFilePath {
                 path: self.input_path.clone(),
                 _temp_dir: None,
             },
@@ -207,7 +207,7 @@ impl NotarizeOp {
                 bundle_id,
             ],
         };
-        
+
         let provider_args = self
             .provider
             .as_ref()
