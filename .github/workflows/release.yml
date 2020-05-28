@@ -2,13 +2,10 @@ name: Create Release
 
 env:
   PROJECT_NAME: xcnotary
-  
-
 on:
   push:
     tags:
       - 'v*'
-
 jobs:
   build:
     runs-on: macOS-latest
@@ -37,6 +34,15 @@ jobs:
           shasum -a 256 $BOTTLE_NAME
           echo ::set-output name=BOTTLE_DIR::${BOTTLE_DIR}
           echo ::set-output name=BOTTLE_NAME::${BOTTLE_NAME}
+    - name: VPrev Bottle
+      id: vprev_bottle
+      run: |
+          set -eu
+          OS_NAME=mojave
+          VERSION=${GITHUB_REF#refs/tags/v*}
+          BOTTLE_NAME=${{ env.PROJECT_NAME }}-$VERSION.$OS_NAME.bottle.tar.gz
+
+          echo ::set-output name=BOTTLE_NAME::${BOTTLE_NAME}
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
@@ -58,4 +64,14 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./${{ steps.bottle.outputs.BOTTLE_DIR }}/${{ steps.bottle.outputs.BOTTLE_NAME }}
         asset_name: ${{ steps.bottle.outputs.BOTTLE_NAME }}
+        asset_content_type: application/tar+gzip
+    - name: Upload Release Asset - Prev Version
+      id: upload-release-asset-prev
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ steps.bottle.outputs.BOTTLE_DIR }}/${{ steps.bottle.outputs.BOTTLE_NAME }}
+        asset_name: ${{ steps.vprev_bottle.outputs.BOTTLE_NAME }}
         asset_content_type: application/tar+gzip

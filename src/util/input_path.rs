@@ -1,7 +1,6 @@
 use super::OperationError;
 use crate::util::plist::{bundle_info_from_file, structs::BundleInfo};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub(crate) fn path_info<P: AsRef<Path>>(
     input_path: P,
@@ -29,40 +28,24 @@ pub(crate) fn path_info<P: AsRef<Path>>(
 pub(crate) fn identify_path_type<P: AsRef<Path>>(
     bundle_path: P,
 ) -> Result<PathType, OperationError> {
-    // Alternatively, could just check the extension.
-    let output = Command::new("/usr/bin/mdls")
-        .args(&[
-            "-name",
-            "kMDItemContentTypeTree",
-            bundle_path.as_ref().to_str().unwrap(),
-        ])
-        .output()
-        .unwrap();
-
-    if !output.status.success() {
-        // mdls sends error message to stdout
-        return Err(OperationError::new(
-            &String::from_utf8(output.stdout).unwrap(),
-        ));
+    if let Some(val) = bundle_path.as_ref().extension() {
+        if val == "app" {
+            return Ok(PathType::AppBundle);
+        } else if val == "dmg" {
+            return Ok(PathType::DiskImage);
+        } else if val == "pkg" {
+            return Ok(PathType::InstallerPackage);
+        }
     }
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    if stdout.contains(r#""com.apple.application-bundle""#) {
-        return Ok(PathType::AppBundle);
-    } else if stdout.contains(r#""com.apple.disk-image""#) {
-        return Ok(PathType::DiskImage);
-    } else if stdout.contains(r#""com.apple.installer-package-archive""#) {
-        return Ok(PathType::InstallerPackage);
-    } else {
-        return Err(OperationError::new(&format!(
-            "Expected an application bundle, disk image, or installer package at {}",
-            bundle_path.as_ref().display()
-        ))
-        .into());
-    }
+    Err(OperationError::new(&format!(
+        "Expected an application bundle, disk image, or installer package at {}",
+        bundle_path.as_ref().display()
+    ))
+    .into())
 }
 
+#[derive(Debug, PartialEq)]
 pub(crate) enum PathType {
     AppBundle,
     DiskImage,
@@ -90,4 +73,19 @@ fn read_bundle_info<P: AsRef<Path>>(bundle_path: P) -> Result<BundleInfo, Operat
     }
 
     Ok(bundle_info_from_file(info_plist_path))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::identify_path_type;
+    use super::PathType;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_identify_path() {
+        assert_eq!(Some(PathType::AppBundle), identify_path_type(PathBuf::from("Foo.app")).ok());
+        assert_eq!(Some(PathType::DiskImage), identify_path_type(PathBuf::from("Foo.dmg")).ok());
+        assert_eq!(Some(PathType::InstallerPackage), identify_path_type(PathBuf::from("Foo.pkg")).ok());
+        assert!(identify_path_type(PathBuf::from("Foo")).is_err());
+    }
 }

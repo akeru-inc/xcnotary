@@ -106,12 +106,17 @@ impl NotarizeOp {
     fn zip_bundle(&self) -> Result<InputFilePath, OperationError> {
         let temp_dir = TempFileBuilder::new().tempdir().unwrap();
 
-        let bundle_parent_dir_path = self.input_path.parent().unwrap();
         let bundle_file_name = self.input_path.file_name().unwrap();
 
         let mut zip_path = PathBuf::from(temp_dir.path());
         zip_path.set_file_name(bundle_file_name);
         zip_path.set_extension("zip");
+
+        let mut bundle_parent_dir_path = self.input_path.parent().unwrap();
+        // related: https://github.com/rust-lang/rust/issues/36861
+        if !bundle_parent_dir_path.is_dir() {
+            bundle_parent_dir_path = std::path::Path::new(".");
+        }
 
         let status = Command::new("/usr/bin/ditto")
             .current_dir(bundle_parent_dir_path)
