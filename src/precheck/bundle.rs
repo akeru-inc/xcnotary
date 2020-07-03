@@ -86,18 +86,17 @@ impl super::Precheck for NoGetTaskAllowCheck {
             return Err(OperationError::new(&stderr).into());
         }
 
-        if String::from_utf8(output.stdout)
-            .unwrap()
-            .contains("com.apple.security.get-task-allow")
-        {
-            Ok(Status::fail_with(
-                "Bundle includes get-task-allow entitlement.",
-                "Specify CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO when running xcodebuild.",
-                None,
-            ))
-        } else {
-            Ok(Status::Pass)
+        if !output.stdout.is_empty() {
+            if let Some(true) = crate::util::plist::bundle_entitlemens(&output.stdout).get_task_allow {
+                return Ok(Status::fail_with(
+                    "Bundle includes get-task-allow entitlement.",
+                    "Specify CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO when running xcodebuild.",
+                    None,
+                ))
+            }
         }
+
+        Ok(Status::Pass)
     }
 }
 

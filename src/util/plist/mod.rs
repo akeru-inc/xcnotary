@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::str;
 
 pub mod structs;
 
@@ -11,6 +12,10 @@ pub(crate) fn notarization_upload_response(bytes: &[u8]) -> structs::Notarizatio
 }
 
 pub(crate) fn notarization_status_response(bytes: &[u8]) -> structs::NotarizationInfo {
+    plist::from_bytes(bytes).unwrap()
+}
+
+pub(crate) fn bundle_entitlemens(bytes: &[u8]) -> structs::BundleEntitlements {
     plist::from_bytes(bytes).unwrap()
 }
 
@@ -122,6 +127,17 @@ mod tests {
 </plist>
 "#;
 
+    static ENTITLEMENTS_OUTPUT:&str = r#"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.get-task-allow</key>
+    <true/>
+</dict>
+</plist>
+    "#;
+
     #[test]
     fn test_deserialize_notarization_success_info() {
         let result =
@@ -175,5 +191,13 @@ mod tests {
 
         assert_eq!(result.id, "com.example.helloworld");
         assert!(result.name.starts_with("HelloWorld"));
+    }
+
+    #[test]
+    fn test_parse_entitlements() {
+        let result = super::bundle_entitlemens(ENTITLEMENTS_OUTPUT.as_bytes());
+
+        assert!(result.get_task_allow.is_some());
+        assert!(result.get_task_allow.unwrap());
     }
 }

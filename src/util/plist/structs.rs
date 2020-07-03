@@ -43,6 +43,13 @@ pub(crate) enum NotarizationStatus {
     Invalid,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct BundleEntitlements {
+    #[serde(rename = "com.apple.security.get-task-allow")]
+    pub(crate) get_task_allow: Option<bool>
+}
+
 /// Response from altool --upload-app
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
