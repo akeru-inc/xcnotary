@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::str;
 
 pub mod structs;
 

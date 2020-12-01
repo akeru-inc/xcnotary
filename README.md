@@ -17,8 +17,6 @@
 
 ![Notarization](/docs/images/notarize.png)
 
-*Screencap sped up for brevity. The service takes several minutes to notarize your upload.*
-
 # Installation
 
 ### Homebrew
