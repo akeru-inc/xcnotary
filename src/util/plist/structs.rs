@@ -8,8 +8,6 @@ use std::fmt;
 pub(crate) struct BundleInfo {
     #[serde(rename = "CFBundleIdentifier")]
     pub(crate) id: String,
-    // #[serde(rename = "CFBundleName")]
-    // pub(crate) name: String,
     #[serde(rename = "CFBundleVersion")]
     pub(crate) version: String,
     #[serde(rename = "CFBundleShortVersionString")]
