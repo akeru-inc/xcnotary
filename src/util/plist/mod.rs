@@ -32,8 +32,6 @@ mod tests {
     <dict>
         <key>CFBundleIdentifier</key>
         <string>com.example.helloworld</string>
-        <key>CFBundleName</key>
-        <string>HelloWorld</string>
         <key>CFBundleShortVersionString</key>
         <string>1.0.14</string>        
         <key>CFBundleVersion</key>
@@ -189,7 +187,6 @@ mod tests {
         let result = super::bundle_info_from_file(temp_file);
 
         assert_eq!(result.id, "com.example.helloworld");
-        assert!(result.name.starts_with("HelloWorld"));
     }
 
     #[test]
