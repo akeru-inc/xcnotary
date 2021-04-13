@@ -84,3 +84,13 @@ jobs:
         asset_path: ./${{ steps.bottle.outputs.BOTTLE_DIR }}/${{ steps.bottle.outputs.BOTTLE_NAME }}
         asset_name: ${{ steps.vprev_bottle.outputs.BOTTLE_NAME }}
         asset_content_type: application/tar+gzip
+    - name: Upload Release Asset - PrevPrev Version
+      id: upload-release-asset-prev-prev
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ steps.bottle.outputs.BOTTLE_DIR }}/${{ steps.bottle.outputs.BOTTLE_NAME }}
+        asset_name: ${{ steps.vprev_prev_bottle.outputs.BOTTLE_NAME }}
+        asset_content_type: application/tar+gzip
