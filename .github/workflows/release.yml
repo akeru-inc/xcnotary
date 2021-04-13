@@ -21,7 +21,7 @@ jobs:
       run: |
           # Experimental: brew the bottle ourselves to attach it to this release
           set -eu
-          OS_NAME=catalina
+          OS_NAME=big_sur
           VERSION=${GITHUB_REF#refs/tags/v*}
           BOTTLE_DIR=bottle_build
           BOTTLE_BIN_DIR=$BOTTLE_DIR/${{ env.PROJECT_NAME }}/$VERSION/bin
@@ -38,11 +38,20 @@ jobs:
       id: vprev_bottle
       run: |
           set -eu
-          OS_NAME=mojave
+          OS_NAME=catalina
           VERSION=${GITHUB_REF#refs/tags/v*}
           BOTTLE_NAME=${{ env.PROJECT_NAME }}-$VERSION.$OS_NAME.bottle.tar.gz
 
           echo ::set-output name=BOTTLE_NAME::${BOTTLE_NAME}
+    - name: VPrevPrev Bottle
+      id: vprev_prev_bottle
+      run: |
+          set -eu
+          OS_NAME=mojave
+          VERSION=${GITHUB_REF#refs/tags/v*}
+          BOTTLE_NAME=${{ env.PROJECT_NAME }}-$VERSION.$OS_NAME.bottle.tar.gz
+
+          echo ::set-output name=BOTTLE_NAME::${BOTTLE_NAME}          
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
