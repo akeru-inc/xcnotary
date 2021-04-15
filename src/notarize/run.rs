@@ -144,16 +144,9 @@ impl NotarizeOp {
         let output = self.run_altool(AltoolArgs::NotarizeApp {
             path: &input_path.path,
             bundle_id: &self.bundle_id,
-        });
+        })?;
 
-        if !output.status.success() {
-            return Err(OperationError::detail(
-                "Notarization upload failed",
-                &String::from_utf8(output.stderr).unwrap(),
-            ));
-        }
-
-        let upload = plist::notarization_upload_response(&output.stdout);
+        let upload = plist::notarization_upload_response(output.as_bytes());
 
         Ok(upload.details.request_uuid)
     }
@@ -162,16 +155,9 @@ impl NotarizeOp {
     fn get_status(&self, request_id: &str) -> Result<NotarizationInfo, OperationError> {
         let output = self.run_altool(AltoolArgs::NotarizationInfo {
             request_id: request_id.clone(),
-        });
+        })?;
 
-        if !output.status.success() {
-            return Err(OperationError::detail(
-                "Notarization status check failed",
-                &String::from_utf8(output.stderr).unwrap(),
-            ));
-        }
-
-        let info = plist::notarization_status_response(&output.stdout);
+        let info = plist::notarization_status_response(output.as_bytes());
 
         if !info
             .success_message
@@ -201,7 +187,7 @@ impl NotarizeOp {
         Ok(())
     }
 
-    fn run_altool(&self, args: AltoolArgs) -> std::process::Output {
+    fn run_altool(&self, args: AltoolArgs) -> Result<String, OperationError> {
         let args = match args {
             AltoolArgs::NotarizationInfo { request_id } => vec!["--notarization-info", &request_id],
             AltoolArgs::NotarizeApp { path, bundle_id } => vec![
@@ -218,7 +204,7 @@ impl NotarizeOp {
             .as_ref()
             .map_or(vec![], |p| vec!["--asc-provider", &p]);
 
-        Command::new("/usr/bin/xcrun")
+        let output = Command::new("/usr/bin/xcrun")
             .args(&[
                 "altool",
                 "-u",
@@ -231,6 +217,18 @@ impl NotarizeOp {
             .args(provider_args)
             .args(args)
             .output()
-            .unwrap()
+            .unwrap();
+
+        let stdout = String::from_utf8(output.stdout).unwrap();
+
+        if output.status.success() {
+            Ok(stdout)
+        } else {
+            let combined = String::from_utf8(output.stderr).unwrap() + &stdout;
+            Err(OperationError::detail(
+                "Notarization service returned an error. Please check the output and try again",
+                &combined,
+            ))
+        }
     }
 }

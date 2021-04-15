@@ -61,7 +61,7 @@ impl super::Precheck for HardenedRuntimeCheck {
         } else {
             Ok(Status::fail_with(
                 "Bundle does not have hardened runtime enabled.",
-                r#"codesign using --runtime flag, or pass OTHER_CODE_SIGN_FLAGS=--runtime to xcodebuild. You can also enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities""#,
+                r#"codesign using --options runtime flag, or pass OTHER_CODE_SIGN_FLAGS=--runtime to xcodebuild. You can also enable the "Hardened Runtime" capability in Xcode's target settings > "Signing and Capabilities""#,
                 None,
             ))
         }
@@ -87,12 +87,14 @@ impl super::Precheck for NoGetTaskAllowCheck {
         }
 
         if !output.stdout.is_empty() {
-            if let Some(true) = crate::util::plist::bundle_entitlemens(&output.stdout).get_task_allow {
+            if let Some(true) =
+                crate::util::plist::bundle_entitlemens(&output.stdout).get_task_allow
+            {
                 return Ok(Status::fail_with(
                     "Bundle includes get-task-allow entitlement.",
                     "Specify CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO when running xcodebuild.",
                     None,
-                ))
+                ));
             }
         }
 

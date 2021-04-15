@@ -83,9 +83,18 @@ mod tests {
 
     #[test]
     fn test_identify_path() {
-        assert_eq!(Some(PathType::AppBundle), identify_path_type(PathBuf::from("Foo.app")).ok());
-        assert_eq!(Some(PathType::DiskImage), identify_path_type(PathBuf::from("Foo.dmg")).ok());
-        assert_eq!(Some(PathType::InstallerPackage), identify_path_type(PathBuf::from("Foo.pkg")).ok());
+        assert_eq!(
+            Some(PathType::AppBundle),
+            identify_path_type(PathBuf::from("Foo.app")).ok()
+        );
+        assert_eq!(
+            Some(PathType::DiskImage),
+            identify_path_type(PathBuf::from("Foo.dmg")).ok()
+        );
+        assert_eq!(
+            Some(PathType::InstallerPackage),
+            identify_path_type(PathBuf::from("Foo.pkg")).ok()
+        );
         assert!(identify_path_type(PathBuf::from("Foo")).is_err());
     }
 }

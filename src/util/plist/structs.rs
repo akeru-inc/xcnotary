@@ -45,7 +45,7 @@ pub(crate) enum NotarizationStatus {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct BundleEntitlements {
     #[serde(rename = "com.apple.security.get-task-allow")]
-    pub(crate) get_task_allow: Option<bool>
+    pub(crate) get_task_allow: Option<bool>,
 }
 
 /// Response from altool --upload-app
