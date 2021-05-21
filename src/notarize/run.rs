@@ -66,7 +66,7 @@ impl NotarizeOp {
 
         let pb = progress_bar("Waiting for notarization");
 
-        loop {
+        let (success, log_url) = loop {
             std::io::stdout().flush().unwrap();
 
             std::thread::sleep(std::time::Duration::from_secs(5));
@@ -76,29 +76,37 @@ impl NotarizeOp {
             match info.details.status {
                 NotarizationStatus::InProgress => continue,
                 NotarizationStatus::Success => {
-                    break;
+                    break (true, info.details.logfile_url);
                 }
                 NotarizationStatus::Invalid => {
-                    let log_url = info.details.logfile_url.unwrap();
-
-                    let log_response = reqwest::blocking::get(&log_url).unwrap().text().unwrap();
-
-                    return Err(OperationError::detail(
-                        "Notarization failed. Server response",
-                        &log_response,
-                    )
-                    .into());
+                    break (false, info.details.logfile_url);
                 }
             }
-        }
+        };
 
         pb.finish();
+
+        let pb = progress_bar("Requesting log file");
+        let log_text = reqwest::blocking::get(&log_url.unwrap())
+            .unwrap()
+            .text()
+            .unwrap();
+        pb.finish();
+
+        if !success {
+            return Err(OperationError::detail(
+                "Notarization failed. Service response:",
+                &log_text,
+            )
+            .into());
+        }
 
         let pb = progress_bar("Stapling");
         self.staple()?;
         pb.finish();
 
-        println!("\n{}", style("Success!").green().bold());
+        println!("\n{}", style("Success! Review the service response for additional issues or warnings:").green().bold());
+        println!("{}", log_text);
 
         Ok(())
     }

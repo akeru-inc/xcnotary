@@ -45,6 +45,7 @@ xcnotary notarize <input path> \
   --developer-account <Apple Developer account> \
   --developer-password-keychain-item <name of keychain item, see below> \
   [--provider <provider short name>]
+  [--no-precheck]
 ```
 
 Supported inputs:
@@ -71,6 +72,13 @@ xcrun altool --list-providers  -u "$DEVELOPER_ACCOUNT_USERNAME" -p "@keychain:$P
 
 - When notarization fails, `xcnotary` will connect to `https://osxapps-ssl.itunes.apple.com/` on port 443 to retrieve the failure log.
 
+### Service response
+
+Apple [documentation](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow) advises: "Always check the log file, even if notarization succeeds, because it might contain warnings that you can fix prior to your next submission."
+
+`xcnotary` will fetch and display the notarization service response upon completion.
+
+
 # Bundle pre-checks
 
 `xcnotary` attempts to check the input for some [common notarization issues](https://developer.apple.com/documentation/xcode/notarizing_macos_software_before_distribution/resolving_common_notarization_issues) before uploading it to Apple. While not foolproof, these checks may potentially save you minutes waiting for a response only to fail due to an incorrect code signing flag.
@@ -85,6 +93,8 @@ When the input is an app bundle, the following checks will be performed:
 - ✅ Bundle having hardened runtime enabled.
 
 When the input is a *.dmg* or a *.pkg*, only the Developer ID signing check is performed, i.e. the only check that can be performed at the moment without extracting the contents. In your workflow, you may want to run `xcnotary precheck` on your bundle target before packaging it.
+
+In rare cases, it may be helpful to troubleshoot code signing issues directly using the notarization service response. To do so, specify `--no-precheck` when invoking `xcnotary notarize`.
 
 # Building for notarization
 

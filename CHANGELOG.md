@@ -1,5 +1,10 @@
 # Change Log
 
+## [v0.4.8](https://github.com/akeru-inc/xcnotary/releases/tag/v0.4.0)
+
+* Added `--no-precheck` option for help troubleshooting some code signing scenarios
+* Notarization service output is now fetched even in the succcess case, following Apple documentation guidance: "Always check the log file, even if notarization succeeds, because it might contain warnings that you can fix prior to your next submission."
+
 ## [v0.4.0](https://github.com/akeru-inc/xcnotary/releases/tag/v0.4.0)
 
 * Added support for .dmg file notarization. [#3](https://github.com/akeru-inc/xcnotary/issues/3)

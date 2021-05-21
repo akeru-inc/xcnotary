@@ -29,10 +29,14 @@ fn run() -> Result<(), Box<dyn Error>> {
             password_keychain_item,
             input_path,
             provider,
+            no_precheck,
         } => {
             let (path_type, bundle_id) = util::input_path::path_info(&input_path)?;
 
-            precheck::run(&input_path, &path_type, false)?;
+            if !no_precheck {
+                precheck::run(&input_path, &path_type, false)?;
+            }
+
             notarize::run(
                 input_path,
                 path_type,

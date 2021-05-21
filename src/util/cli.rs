@@ -30,6 +30,10 @@ pub(crate) enum Args {
         /// Required if the developer credentials are associated with more than one team. Corresponds to "ProviderShortname" from running `xcrun altool --list-providers`
         #[structopt(long)]
         provider: Option<String>,
+
+        /// Skip client-side pre-checks, deferring to notarization service for troubleshooting
+        #[structopt(long)]
+        no_precheck: bool,
     },
 }
 
