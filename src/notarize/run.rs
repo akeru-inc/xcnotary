@@ -181,8 +181,8 @@ impl NotarizeOp {
     }
 
     fn staple(&self) -> Result<(), OperationError> {
-        let output = Command::new("/usr/bin/stapler")
-            .arg("staple")
+        let output = Command::new("/usr/bin/xcrun")
+            .args(["stapler", "staple"])
             .arg(self.input_path.as_os_str())
             .output()
             .unwrap();

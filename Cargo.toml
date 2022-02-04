@@ -1,6 +1,6 @@
 [package]
 name = "xcnotary"
-version = "0.4.8"
+version = "0.4.9"
 authors = ["David Vartan <david@akeru.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
