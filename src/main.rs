@@ -23,6 +23,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         Args::Precheck { input_path } => {
             let path_type = util::input_path::identify_path_type(&input_path)?;
             precheck::run(&input_path, &path_type, true)?;
+            Ok(())
         }
         Args::Notarize {
             developer_account,
@@ -37,16 +38,23 @@ fn run() -> Result<(), Box<dyn Error>> {
                 precheck::run(&input_path, &path_type, false)?;
             }
 
-            notarize::run(
-                input_path,
-                path_type,
-                bundle_id,
-                developer_account,
-                password_keychain_item,
-                provider,
-            )?;
+            let mut retries = 0;
+            return loop {
+                match notarize::run(
+                    &input_path,
+                    path_type,
+                    &bundle_id,
+                    &developer_account,
+                    &password_keychain_item,
+                    &provider,
+                ) {
+                    Ok(()) => break Ok(()),
+                    err => {
+                        retries += 1;
+                        if retries > 3  { break err }
+                    }
+                }
+            }
         }
     }
-
-    Ok(())
 }

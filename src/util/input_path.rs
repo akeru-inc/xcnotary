@@ -45,7 +45,7 @@ pub(crate) fn identify_path_type<P: AsRef<Path>>(
     .into())
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum PathType {
     AppBundle,
     DiskImage,
