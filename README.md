@@ -1,6 +1,19 @@
+# `xcnotary` is no longer needed!
+
+Use `xcrun notarytool --wait` as described in Apple's docs: [Customizing the notarization workflow](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow#3087734)
+
+With a concise example given here: https://github.com/akeru-inc/xcnotary/issues/22#issuecomment-1179170957
+
+
+
+---
+
+
+
+
 ![logo](/docs/images/logo.png)
 
-### the missing macOS app notarization helper, built with Rust
+### ~~the missing macOS app notarization helper, built with Rust~~
 
 # About
 
